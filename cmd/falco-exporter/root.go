@@ -10,8 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/falcosecurity/client-go/pkg/client"
+	"github.com/falcosecurity/falco-exporter/client"
 	"github.com/falcosecurity/falco-exporter/pkg/exporter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
@@ -38,6 +37,7 @@ func main() {
 	var timeout time.Duration
 	pflag.DurationVar(&timeout, "timeout", time.Minute*2, "timeout for initial gRPC connection")
 
+
 	config := &client.Config{
 		DialOptions: []grpc.DialOption{
 			// Instruct `client.NewForConfig` to wait until the underlying connection is up,
@@ -45,16 +45,21 @@ func main() {
 			grpc.WithBlock(),
 		},
 	}
+
+	
 	pflag.StringVar(&config.UnixSocketPath, "client-socket", "unix:///run/falco/falco.sock", "unix socket path for connecting to a Falco gRPC server")
 	pflag.StringVar(&config.Hostname, "client-hostname", "", "hostname for connecting to a Falco gRPC server, if set, takes precedence over --client-socket")
 	pflag.Uint16Var(&config.Port, "client-port", 5060, "port for connecting to a Falco gRPC server")
 	pflag.StringVar(&config.CertFile, "client-cert", "/etc/falco/certs/client.crt", "cert file path for connecting to a Falco gRPC server")
 	pflag.StringVar(&config.KeyFile, "client-key", "/etc/falco/certs/client.key", "key file path for connecting to a Falco gRPC server")
 	pflag.StringVar(&config.CARootFile, "client-ca", "/etc/falco/certs/ca.crt", "CA root file path for connecting to a Falco gRPC server")
+	
 	pflag.BoolVar(&config.GRPCAuth, "grpc-auth", true, "Whether or not falco-exporter authenticates itself to the gRPC server")
 
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	pflag.Parse()
+
+
 
 	go serveMetrics(addr, serverCARootFile, serverCertFile, serverKeyFile)
 	probeMux := enableProbes(probesAddr)
