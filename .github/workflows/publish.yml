@@ -8,8 +8,8 @@ steps:
 uses: docker/login-action@v1
 with:
 registry: ghcr.io
-username: ${{ github.actor }}
-password: ${{ secrets.TOKEN }}
+username: SirCocas
+password: ${{ secrets.GITHUB_TOKEN }}
 - name: Build the falco exporter Docker image
 run: |
        docker build . --tag ghcr.io/SirCocas/falco-exporter-custom-client:latest
