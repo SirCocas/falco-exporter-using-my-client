@@ -1,2 +1,5 @@
 /falco-exporter
 /dist
+*.crt
+*.key
+*.csr

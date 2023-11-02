@@ -17,6 +17,53 @@ import (
 	"google.golang.org/grpc"
 )
 
+
+func stop(ctx context.Context, timeout time.Duration, config *client.Config , probeMux *http.ServeMux, reconnect_time int) {
+	time.Sleep(time.Duration(reconnect_time) * time.Millisecond)
+	
+	// cancel the pending connection after timeout is reached
+	log.Printf("re-connecting...")
+	dialerCtx, cancelTimeout := context.WithTimeout(ctx, timeout)
+	c, err := client.NewForConfig(dialerCtx, config)
+
+	if err != nil {
+		log.Fatalf("gRPC: %v\n", err)
+	}
+	defer c.Close()
+
+	log.Println("connected to gRPC server, subscribing events stream")
+
+
+	oc, err := c.Outputs()
+	if err != nil {
+		log.Fatalf("gRPC: %v\n", err)
+	}
+
+	fsc, err := oc.Sub(ctx)
+	if err != nil {
+		log.Fatalf("gRPC: %v\n", err)
+	}
+
+	if fsc == nil{
+
+	}
+
+	cancelTimeout()
+	
+	log.Println("ready")
+
+	
+	go stop(ctx, timeout, config, probeMux, reconnect_time)
+
+	if err := exporter.Watch(ctx, fsc, time.Second); err != nil {
+		log.Fatalf("gRPC: %v\n", err)
+	} else {
+		log.Println("gRPC stream closed")
+	}
+
+	
+}
+
 func main() {
 
 	var addr string
@@ -36,6 +83,9 @@ func main() {
 
 	var timeout time.Duration
 	pflag.DurationVar(&timeout, "timeout", time.Minute*2, "timeout for initial gRPC connection")
+
+	var reconnect int
+	pflag.IntVar(&reconnect, "reconnect-interval", -1, "time between reconnections (in miliseconds)")
 
 
 	config := &client.Config{
@@ -77,15 +127,19 @@ func main() {
 	// main context
 	ctx := withSignals(context.Background())
 
+
 	// cancel the pending connection after timeout is reached
 	dialerCtx, cancelTimeout := context.WithTimeout(ctx, timeout)
 	c, err := client.NewForConfig(dialerCtx, config)
+
+
 	if err != nil {
 		log.Fatalf("gRPC: %v\n", err)
 	}
 	defer c.Close()
 
 	log.Println("connected to gRPC server, subscribing events stream")
+
 
 	oc, err := c.Outputs()
 	if err != nil {
@@ -100,6 +154,10 @@ func main() {
 	cancelTimeout()
 	enableReadiness(probeMux)
 	log.Println("ready")
+
+	if reconnect > 0{
+		go stop(ctx, timeout, config, probeMux, reconnect)
+	}
 
 	if err := exporter.Watch(ctx, fsc, time.Second); err != nil {
 		log.Fatalf("gRPC: %v\n", err)
@@ -166,3 +224,4 @@ func enableReadiness(probeMux *http.ServeMux) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 }
+
