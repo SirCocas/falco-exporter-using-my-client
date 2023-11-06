@@ -147,7 +147,8 @@ type OutputsWatchCallback func(res *outputs.Response) error
 func OutputsWatch(ctx context.Context,
 	fcs outputs.Service_SubClient,
 	cb OutputsWatchCallback,
-	timeout time.Duration) error {
+	timeout time.Duration,
+	reconnect time.Time) error {
 
 	resCh := make(chan *outputs.Response, 1)
 	errCh := make(chan error, 1)
@@ -158,6 +159,11 @@ func OutputsWatch(ctx context.Context,
 			if err != nil {
 				errCh <- err
 				return
+			}
+			if time.Now().After(reconnect) && ! reconnect.IsZero(){
+
+				errCh <- err
+				return 
 			}
 			resCh <- res
 		}
@@ -179,6 +185,10 @@ func OutputsWatch(ctx context.Context,
 			fcs.Send(&outputs.Request{})
 		case <-ctx.Done():
 			return ctx.Err()
+
+		}
+		if time.Now().After(reconnect) && ! reconnect.IsZero(){
+			return ctx.Err()
 		}
 	}
 }
@@ -188,9 +198,12 @@ func OutputsWatch(ctx context.Context,
 // using a callback function of type OutputsWatchCallback.
 //
 // The timeout parameter specifies the frequency of the watch operation.
+
+
 func (c *Client) OutputsWatch(ctx context.Context,
 	cb OutputsWatchCallback,
 	timeout time.Duration,
+	reconnect time.Time, 
 	opts ...grpc.CallOption) error {
 	oc, err := c.Outputs()
 	if err != nil {
@@ -200,7 +213,7 @@ func (c *Client) OutputsWatch(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	return OutputsWatch(ctx, fcs, cb, timeout)
+	return OutputsWatch(ctx, fcs, cb, timeout, reconnect)
 }
 
 // Version it the client for Falco Version API.

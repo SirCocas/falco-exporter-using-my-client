@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	
 	"github.com/falcosecurity/falco-exporter/client"
 	"github.com/falcosecurity/falco-exporter/pkg/exporter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -18,7 +19,7 @@ import (
 )
 
 
-func stop(ctx context.Context, timeout time.Duration, config *client.Config , probeMux *http.ServeMux, reconnect_time int) {
+func connect(ctx context.Context, timeout time.Duration, config *client.Config , probeMux *http.ServeMux, reconnect_time int) {
 	time.Sleep(time.Duration(reconnect_time) * time.Millisecond)
 	
 	// cancel the pending connection after timeout is reached
@@ -44,18 +45,17 @@ func stop(ctx context.Context, timeout time.Duration, config *client.Config , pr
 		log.Fatalf("gRPC: %v\n", err)
 	}
 
-	if fsc == nil{
-
-	}
 
 	cancelTimeout()
 	
 	log.Println("ready")
 
 	
-	go stop(ctx, timeout, config, probeMux, reconnect_time)
+	go connect(ctx, timeout, config, probeMux, reconnect_time)
 
-	if err := exporter.Watch(ctx, fsc, time.Second); err != nil {
+	expected_close_time := time.Now().Add(time.Duration(reconnect_time)*time.Millisecond)
+
+	if err := exporter.Watch(ctx, fsc, time.Second, expected_close_time); err != nil {
 		log.Fatalf("gRPC: %v\n", err)
 	} else {
 		log.Println("gRPC stream closed")
@@ -156,10 +156,10 @@ func main() {
 	log.Println("ready")
 
 	if reconnect > 0{
-		go stop(ctx, timeout, config, probeMux, reconnect)
+		go connect(ctx, timeout, config, probeMux, reconnect)
 	}
 
-	if err := exporter.Watch(ctx, fsc, time.Second); err != nil {
+	if err := exporter.Watch(ctx, fsc, time.Second, time.Time{}); err != nil {
 		log.Fatalf("gRPC: %v\n", err)
 	} else {
 		log.Println("gRPC stream closed")
