@@ -53,7 +53,7 @@ func connect(ctx context.Context, timeout time.Duration, config *client.Config ,
 	
 	go connect(ctx, timeout, config, probeMux, reconnect_time)
 
-	expected_close_time := time.Now().Add(time.Duration(reconnect_time)*time.Millisecond)
+	expected_close_time := time.Now().Add(time.Duration(reconnect_time * 2)*time.Millisecond)
 
 	if err := exporter.Watch(ctx, fsc, time.Second, expected_close_time); err != nil {
 		log.Fatalf("gRPC: %v\n", err)

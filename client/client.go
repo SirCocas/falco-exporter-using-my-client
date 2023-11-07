@@ -160,12 +160,13 @@ func OutputsWatch(ctx context.Context,
 				errCh <- err
 				return
 			}
+			
+			resCh <- res
 			if time.Now().After(reconnect) && ! reconnect.IsZero(){
 
 				errCh <- err
 				return 
 			}
-			resCh <- res
 		}
 	}()
 
@@ -175,6 +176,9 @@ func OutputsWatch(ctx context.Context,
 			err := cb(res)
 			if err != nil {
 				return err
+			}
+			if time.Now().After(reconnect) && ! reconnect.IsZero(){
+				return ctx.Err()
 			}
 		case err := <-errCh:
 			if err == io.EOF {
@@ -187,9 +191,7 @@ func OutputsWatch(ctx context.Context,
 			return ctx.Err()
 
 		}
-		if time.Now().After(reconnect) && ! reconnect.IsZero(){
-			return ctx.Err()
-		}
+		
 	}
 }
 
