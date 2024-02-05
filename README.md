@@ -1,4 +1,4 @@
-# falco-exporter
+# falco-exporter 
 > Prometheus Metrics Exporter for Falco output events
 
 [![Release](https://img.shields.io/github/release/falcosecurity/falco-exporter.svg?style=flat-square)](https://github.com/falcosecurity/falco-exporter/releases/latest)
@@ -17,6 +17,8 @@
   - the default Unix socket path is `/run/falco/falco.sock` to be compatible with Falco 0.33.0 and later (in previous version it defaulted to `/var/run/falco.sock`)
 
 ## Usage
+(version that creates new connection every 30 seconds untill all connections are made)
+
 
 ### Run it manually
 

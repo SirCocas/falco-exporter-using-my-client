@@ -19,8 +19,8 @@ import (
 )
 
 
-func connect(ctx context.Context, timeout time.Duration, config *client.Config , probeMux *http.ServeMux, reconnect_time int) {
-	time.Sleep(time.Duration(reconnect_time) * time.Millisecond)
+func connect(ctx context.Context, timeout time.Duration, config *client.Config , probeMux *http.ServeMux, reconnect_time int, iteration int) {
+	time.Sleep(time.Duration(30) * time.Second)
 	
 	// cancel the pending connection after timeout is reached
 	log.Printf("re-connecting...")
@@ -50,19 +50,23 @@ func connect(ctx context.Context, timeout time.Duration, config *client.Config ,
 	
 	log.Println("ready")
 
-	
-	go connect(ctx, timeout, config, probeMux, reconnect_time)
+	if iteration < reconnect_time{
 
-	expected_close_time := time.Now().Add(time.Duration(reconnect_time * 2)*time.Millisecond)
+		go connect(ctx, timeout, config, probeMux, reconnect_time, iteration + 1)
 
-	if err := exporter.Watch(ctx, fsc, time.Second, expected_close_time); err != nil {
+	}
+
+
+	if err := exporter.Watch(ctx, fsc, time.Second); err != nil {
 		log.Fatalf("gRPC: %v\n", err)
 	} else {
 		log.Println("gRPC stream closed")
+		go connect(ctx,timeout,config,probeMux, reconnect_time, reconnect_time)
 	}
 
 	
 }
+
 
 func main() {
 
@@ -156,13 +160,14 @@ func main() {
 	log.Println("ready")
 
 	if reconnect > 0{
-		go connect(ctx, timeout, config, probeMux, reconnect)
+		go connect(ctx, timeout, config, probeMux, reconnect, 0)
 	}
 
-	if err := exporter.Watch(ctx, fsc, time.Second, time.Time{}); err != nil {
+	if err := exporter.Watch(ctx, fsc, time.Second); err != nil {
 		log.Fatalf("gRPC: %v\n", err)
 	} else {
 		log.Println("gRPC stream closed")
+		go connect(ctx, timeout, config, probeMux, reconnect, reconnect)  
 	}
 }
 

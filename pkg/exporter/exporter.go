@@ -58,7 +58,7 @@ func Forward(res *outputs.Response) error {
 // The timeout parameter specifies the frequency of the watch operation.
 //
 // It waits until the stream is closed, the context is cancelled or an error occured.
-func Watch(ctx context.Context, sc outputs.Service_SubClient, timeout time.Duration, time_reconnect time.Time) error {
-	return client.OutputsWatch(ctx, sc, Forward, timeout, time_reconnect)
+func Watch(ctx context.Context, sc outputs.Service_SubClient, timeout time.Duration) error {
+	return client.OutputsWatch(ctx, sc, Forward, timeout)
 }
 
